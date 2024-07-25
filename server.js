@@ -31,7 +31,7 @@ app.get("/auth/callback", async (req, res) => {
       }
     );
 
-    const { access_token } = tokenResponse.data;
+    const { access_token, user_id } = tokenResponse.data;
     // Exchange short-lived access token for a long-lived token
     const longLivedTokenResponse = await axios.get(
       `https://graph.instagram.com/access_token`,
@@ -47,7 +47,7 @@ app.get("/auth/callback", async (req, res) => {
     const { access_token: longLivedToken } = longLivedTokenResponse.data;
     // Store the long-lived token and use it for further requests
     // Here, we're just sending it as a response for demonstration purposes
-    res.json({ longLivedToken });
+    res.json({ user_id, longLivedToken });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
