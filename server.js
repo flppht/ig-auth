@@ -4,6 +4,7 @@ require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const redirectUri = `${process.env.BASE_URL}${process.env.REDIRECT_PATH}`;
 
 app.get("/auth", (req, res) => {
   const instagramAuthUrl = `https://api.instagram.com/oauth/authorize?client_id=${process.env.INSTAGRAM_CLIENT_ID}&redirect_uri=${process.env.REDIRECT_URI}&scope=user_profile,user_media&response_type=code&state=1`;
