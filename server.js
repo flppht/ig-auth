@@ -28,6 +28,11 @@ app.get("/auth/callback", async (req, res) => {
         grant_type: "authorization_code",
         redirect_uri: "https://ig-auth.onrender.com/auth/callback",
         code,
+      },
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
       }
     );
     console.log(tokenResponse);
