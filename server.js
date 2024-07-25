@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 3001;
 const redirectUri = `${process.env.BASE_URL}${process.env.REDIRECT_PATH}`;
 
 app.get("/auth", (req, res) => {
-  const instagramAuthUrl = `https://api.instagram.com/oauth/authorize?client_id=${process.env.INSTAGRAM_CLIENT_ID}&redirect_uri=${process.env.REDIRECT_URI}&scope=user_profile,user_media&response_type=code&state=1`;
+  const instagramAuthUrl = `https://api.instagram.com/oauth/authorize?client_id=${process.env.INSTAGRAM_CLIENT_ID}&redirect_uri=${redirectUri}&scope=user_profile,user_media&response_type=code&state=1`;
   res.redirect(instagramAuthUrl);
 });
 
@@ -21,7 +21,7 @@ app.get("/auth/callback", async (req, res) => {
         client_id: process.env.INSTAGRAM_CLIENT_ID,
         client_secret: process.env.INSTAGRAM_CLIENT_SECRET,
         grant_type: "authorization_code",
-        redirect_uri: process.env.REDIRECT_URI,
+        redirect_uri: redirectUri,
         code,
       }
     );
