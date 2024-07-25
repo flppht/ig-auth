@@ -30,6 +30,7 @@ app.get("/auth/callback", async (req, res) => {
         code,
       }
     );
+    console.log(tokenResponse);
 
     const { access_token } = tokenResponse.data;
     // Exchange short-lived access token for a long-lived token
