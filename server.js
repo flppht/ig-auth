@@ -1,6 +1,7 @@
 const express = require("express");
 const fs = require("fs");
 const axios = require("axios");
+const path = require("path");
 require("dotenv").config();
 
 const app = express();
@@ -9,7 +10,11 @@ const PORT = process.env.PORT || 3001;
 const redirectUri = `${process.env.BASE_URL}${process.env.REDIRECT_PATH}`;
 let widgetClientId;
 
-const filePath = "./data/token.json";
+const filePath = path.join(__dirname, "data", "token.json");
+
+if (!fs.existsSync(path.dirname(filePath))) {
+  fs.mkdirSync(path.dirname(filePath));
+}
 
 const readData = () => {
   if (!fs.existsSync(filePath)) {
