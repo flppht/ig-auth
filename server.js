@@ -90,7 +90,7 @@ app.get("/token/:id", (req, res) => {
   if (!entry) {
     return res.status(404).send("ID does not exists!");
   }
-  res.json({ token: entry.token });
+  res.json({ token: entry.longLivedToken });
 });
 
 //endpoint for refreshing token
