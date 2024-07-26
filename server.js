@@ -50,8 +50,8 @@ app.get("/auth/callback", async (req, res) => {
     const { access_token: longLivedToken } = longLivedTokenResponse.data;
     // Store the long-lived token and use it for further requests
     // Here, we're just sending it as a response for demonstration purposes
-    // res.json({ user_id, longLivedToken });
-    res.redirect(`${process.env.WEB_APP_URL}?token=${longLivedToken}`);
+    res.json({ user_id, longLivedToken });
+    // res.redirect(`${process.env.WEB_APP_URL}?token=${longLivedToken}`);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
