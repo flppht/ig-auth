@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 3001;
 const redirectUri = `${process.env.BASE_URL}${process.env.REDIRECT_PATH}`;
 let widgetClientId;
 
-const filePath = "./token.json";
+const filePath = "./data/token.json";
 
 const readData = () => {
   if (!fs.existsSync(filePath)) {
@@ -31,7 +31,6 @@ app.get("/auth", (req, res) => {
 });
 
 app.get("/auth/callback", async (req, res) => {
-  console.log("widgetclientid in callback ", widgetClientId);
   const { code } = req.query;
   try {
     // Exchange code for a short-lived access token
@@ -92,13 +91,11 @@ function saveData(widgetClientId, longLivedToken, res) {
   const index = data.findIndex(
     (item) => item.widgetClientId === widgetClientId
   );
-  console.log("index ", index);
   if (index != -1) {
     data[index].longLivedToken = longLivedToken;
   } else {
     data.push({ widgetClientId, longLivedToken });
   }
-  console.log({ data });
 
   writeData(data);
   res.send("Data saved");
