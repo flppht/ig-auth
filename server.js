@@ -66,17 +66,8 @@ app.get("/auth/callback", async (req, res) => {
 
     const { access_token: longLivedToken } = longLivedTokenResponse.data;
 
-    if (!widgetClientId || !longLivedToken) {
-      return res.status(400).send("Client ID and token are required!");
-    }
-    const data = readData();
-    data.push({ widgetClientId, longLivedToken });
-    console.log({ data });
-
-    writeData(data);
-    res.send("Data saved");
-
-    res.json({ user_id, longLivedToken });
+    saveData(widgetClientId, longLivedToken, res);
+    // res.json({ user_id, longLivedToken });
     // res.redirect(`${process.env.WEB_APP_URL}?token=${longLivedToken}`);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -93,6 +84,25 @@ app.get("/token/:id", (req, res) => {
   res.json({ token: entry.longLivedToken });
 });
 
+function saveData(widgetClientId, longLivedToken, res) {
+  if (!widgetClientId || !longLivedToken) {
+    return res.status(400).send("Client ID and token are required!");
+  }
+  const data = readData();
+  const index = data.findIndex(
+    (item) => item.widgetClientId === widgetClientId
+  );
+  console.log("index ", index);
+  if (index != -1) {
+    data[index].longLivedToken = longLivedToken;
+  } else {
+    data.push({ widgetClientId, longLivedToken });
+  }
+  console.log({ data });
+
+  writeData(data);
+  res.send("Data saved");
+}
 //endpoint for refreshing token
 // app.get("/auth/refreshtoken", async (req, res) => {
 //   const { user_id, access_token } = req.query;
