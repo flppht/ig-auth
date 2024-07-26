@@ -3,9 +3,25 @@ const axios = require("axios");
 require("dotenv").config();
 
 const app = express();
+app.use(express.json());
 const PORT = process.env.PORT || 3001;
 const redirectUri = `${process.env.BASE_URL}${process.env.REDIRECT_PATH}`;
 let widgetClientId;
+
+const filePath = "./token.json";
+
+const readData = () => {
+  if (!fs.existsSync(filePath)) {
+    return [];
+  }
+  const data = fs.readFileSync(filePath, "utf8");
+  return JSON.parse(data);
+};
+
+const writeData = (data) => {
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+};
+
 app.get("/auth", (req, res) => {
   let { id } = req.query;
   widgetClientId = id;
@@ -48,13 +64,32 @@ app.get("/auth/callback", async (req, res) => {
     );
 
     const { access_token: longLivedToken } = longLivedTokenResponse.data;
-    // Store the long-lived token and use it for further requests
-    // Here, we're just sending it as a response for demonstration purposes
+
+    if (!widgetClientId || !longLivedToken) {
+      return res.status(400).send("Client ID and token are required!");
+    }
+    const data = readData();
+    data.push({ widgetClientId, longLivedToken });
+    console.log({ data });
+
+    writeData(data);
+    res.send("Data saved");
+
     res.json({ user_id, longLivedToken });
     // res.redirect(`${process.env.WEB_APP_URL}?token=${longLivedToken}`);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+});
+
+app.get("/token/:id", (req, res) => {
+  const { id } = req.params;
+  const data = readData();
+  const entry = data.find((item) => item.widgetClientId === id);
+  if (!entry) {
+    return res.status(404).send("ID does not exists!");
+  }
+  res.json({ token: entry.token });
 });
 
 //endpoint for refreshing token
