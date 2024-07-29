@@ -9,7 +9,6 @@ const app = express();
 app.use(express.json());
 const PORT = process.env.PORT || 3001;
 const redirectUri = `${process.env.BASE_URL}${process.env.REDIRECT_PATH}`;
-let widgetClientId;
 
 const filePath = path.join(__dirname, "data", "token.json");
 
@@ -55,13 +54,15 @@ app.use(function (req, res, next) {
 
 app.get("/auth", (req, res) => {
   let { id } = req.query;
-  widgetClientId = id;
-  const instagramAuthUrl = `https://api.instagram.com/oauth/authorize?client_id=${process.env.INSTAGRAM_CLIENT_ID}&redirect_uri=${redirectUri}&scope=user_profile,user_media&response_type=code&state=1`;
+  const state = encodeURIComponent(JSON.stringify({ userId: id }));
+  const instagramAuthUrl = `https://api.instagram.com/oauth/authorize?client_id=${process.env.INSTAGRAM_CLIENT_ID}&redirect_uri=${redirectUri}&scope=user_profile,user_media&response_type=code&state=${state}`;
   res.redirect(instagramAuthUrl);
 });
 
 app.get("/auth/callback", async (req, res) => {
-  const { code } = req.query;
+  const { code, state } = req.query;
+  let userId = JSON.parse(state).userId;
+
   try {
     // Exchange code for a short-lived access token
     const tokenResponse = await axios.post(
@@ -80,7 +81,7 @@ app.get("/auth/callback", async (req, res) => {
       }
     );
 
-    const { access_token, user_id } = tokenResponse.data;
+    const { access_token } = tokenResponse.data;
     // Exchange short-lived access token for a long-lived token
     const longLivedTokenResponse = await axios.get(
       `https://graph.instagram.com/access_token`,
@@ -93,9 +94,10 @@ app.get("/auth/callback", async (req, res) => {
       }
     );
 
-    const { access_token: longLivedToken } = longLivedTokenResponse.data;
+    const { access_token: longLivedToken, expires_in: expiresIn } =
+      longLivedTokenResponse.data;
 
-    saveData(widgetClientId, longLivedToken, res);
+    saveData(userId, longLivedToken, expiresIn, res);
     // res.json({ user_id, longLivedToken });
     // res.redirect(`${process.env.WEB_APP_URL}?token=${longLivedToken}`);
   } catch (error) {
@@ -106,48 +108,50 @@ app.get("/auth/callback", async (req, res) => {
 app.get("/token/:id", (req, res) => {
   const { id } = req.params;
   const data = readData();
-  const entry = data.find((item) => item.widgetClientId === id);
+  const entry = data.find((item) => item.userId === id);
   if (!entry) {
     return res.status(404).send("ID does not exists!");
   }
   res.json({ token: entry.longLivedToken });
 });
 
-function saveData(widgetClientId, longLivedToken, res) {
-  if (!widgetClientId || !longLivedToken) {
+function saveData(userId, longLivedToken, expiresIn, res) {
+  if (!userId || !longLivedToken) {
     return res.status(400).send("Client ID and token are required!");
   }
   const data = readData();
-  const index = data.findIndex(
-    (item) => item.widgetClientId === widgetClientId
-  );
+  const index = data.findIndex((item) => item.userId === userId);
   if (index != -1) {
     data[index].longLivedToken = longLivedToken;
+    data[index].expiresIn = expiresIn;
   } else {
-    data.push({ widgetClientId, longLivedToken });
+    data.push({ userId, longLivedToken, expiresIn });
   }
 
   writeData(data);
   res.send("Data saved");
 }
 //endpoint for refreshing token
-// app.get("/auth/refreshtoken", async (req, res) => {
-//   const { user_id, access_token } = req.query;
-//   try {
-//     const refreshedTokenResponse = await axios.get(
-//       `https://graph.instagram.com/refresh_access_token`,
-//       {
-//         params: {
-//           grant_type: "ig_refresh_token",
-//           access_token,
-//         },
-//       }
-//     );
-//     const { access_token: refresh_access_token } = refreshedTokenResponse.data;
+app.get("/refreshtoken", async (req, res) => {
+  const { userId, accessToken } = req.query;
+  try {
+    const refreshedTokenResponse = await axios.get(
+      `https://graph.instagram.com/refresh_access_token`,
+      {
+        params: {
+          grant_type: "ig_refresh_token",
+          access_token: accessToken,
+        },
+      }
+    );
+    const { access_token: refreshToken, expires_in: expiresIn } =
+      refreshedTokenResponse.data;
 
-//     res.json({ user_id, refresh_access_token });
-//   } catch (error) {}
-// });
+    saveData(userId, refreshToken, expiresIn, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`Server is running on ${PORT}`);
