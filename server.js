@@ -111,10 +111,13 @@ app.get("/auth/callback", async (req, res) => {
       }
     );
 
-    const { access_token: longLivedToken, expires_in: expiresIn } =
+    const { access_token: longLivedToken, expires_in } =
       longLivedTokenResponse.data;
 
-    saveData(userId, longLivedToken, expiresIn, res);
+    const expiresIn = new Date();
+    expiresIn.setSeconds(expiresIn.getSeconds() + expires_in);
+
+    saveData(userId, longLivedToken, expiresIn.getTime(), res);
     // res.json({ user_id, longLivedToken });
     // res.redirect(`${process.env.WEB_APP_URL}?token=${longLivedToken}`);
   } catch (error) {
@@ -149,10 +152,13 @@ app.get("/refreshtoken", async (req, res) => {
         },
       }
     );
-    const { access_token: refreshToken, expires_in: expiresIn } =
+    const { access_token: refreshToken, expires_in } =
       refreshedTokenResponse.data;
 
-    saveData(userId, refreshToken, expiresIn, res);
+    const expiresIn = new Date();
+    expiresIn.setSeconds(expiresIn.getSeconds() + expires_in);
+
+    saveData(userId, refreshToken, expiresIn.getTime(), res);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
