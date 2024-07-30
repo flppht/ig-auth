@@ -28,6 +28,23 @@ const writeData = (data) => {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
 };
 
+function saveData(userId, longLivedToken, expiresIn, res) {
+  if (!userId || !longLivedToken) {
+    return res.status(400).send("Client ID and token are required!");
+  }
+  const data = readData();
+  const index = data.findIndex((item) => item.userId === userId);
+  if (index != -1) {
+    data[index].longLivedToken = longLivedToken;
+    data[index].expiresIn = expiresIn;
+  } else {
+    data.push({ userId, longLivedToken, expiresIn });
+  }
+
+  writeData(data);
+  res.send("Data saved");
+}
+
 app.use(function (req, res, next) {
   // Website you wish to allow to connect
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -112,25 +129,13 @@ app.get("/token/:id", (req, res) => {
   if (!entry) {
     return res.status(404).send("ID does not exists!");
   }
-  res.json({ token: entry.longLivedToken });
+  res.json({
+    token: entry.longLivedToken,
+    expiresIn: entry.expiresIn,
+    userId: entry.userId,
+  });
 });
 
-function saveData(userId, longLivedToken, expiresIn, res) {
-  if (!userId || !longLivedToken) {
-    return res.status(400).send("Client ID and token are required!");
-  }
-  const data = readData();
-  const index = data.findIndex((item) => item.userId === userId);
-  if (index != -1) {
-    data[index].longLivedToken = longLivedToken;
-    data[index].expiresIn = expiresIn;
-  } else {
-    data.push({ userId, longLivedToken, expiresIn });
-  }
-
-  writeData(data);
-  res.send("Data saved");
-}
 //endpoint for refreshing token
 app.get("/refreshtoken", async (req, res) => {
   const { userId, accessToken } = req.query;
