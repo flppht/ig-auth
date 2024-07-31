@@ -2,7 +2,6 @@ const express = require("express");
 const fs = require("fs");
 const axios = require("axios");
 const path = require("path");
-const cors = require("cors");
 require("dotenv").config();
 
 const app = express();
@@ -141,14 +140,19 @@ app.get("/token/:id", (req, res) => {
 
 //endpoint for refreshing token
 app.get("/refreshtoken", async (req, res) => {
-  const { userId, accessToken } = req.query;
+  const { userId } = req.query;
+  const data = readData();
+  const entry = data.find((item) => item.userId === userId);
+  if (!entry) {
+    return res.status(404).send("ID does not exists!");
+  }
   try {
     const refreshedTokenResponse = await axios.get(
       `https://graph.instagram.com/refresh_access_token`,
       {
         params: {
           grant_type: "ig_refresh_token",
-          access_token: accessToken,
+          access_token: entry.longLivedToken,
         },
       }
     );
